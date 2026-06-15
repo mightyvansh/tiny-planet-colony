@@ -8,3 +8,9 @@ Thumbs.db
 
 # logs
 *.log
+
+# secrets / local env — never commit
+.env
+.env.*
+env.md
+*.token

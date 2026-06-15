@@ -24,6 +24,7 @@ const Render = {
     this.ctx = canvas.getContext('2d');
     this.resize();
     window.addEventListener('resize', () => this.resize());
+    Sprites.load();
   },
 
   resize() {
@@ -376,15 +377,23 @@ const Render = {
     const z = Camera.zoom;
     const cx = p.cx, baseY = p.cy;
     ctx.globalAlpha = alpha;
+
+    // drop shadow
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.beginPath();
     ctx.ellipse(cx, baseY + 3 * z, p.hw * 0.6, p.hh * 0.75, 0, 0, Math.PI * 2);
     ctx.fill();
-    if (key === 'solar') this.drawSolar(cx, baseY, z, sun);
-    else if (key === 'oxygen') this.drawOxygen(cx, baseY, z);
-    else if (key === 'lab') this.drawLab(cx, baseY, z);
-    else if (key === 'home') this.drawHome(cx, baseY, z, sun);
-    else if (key === 'battery') this.drawBattery(cx, baseY, z);
+
+    // try sprite first; fall back to procedural for the original 5 types
+    const usedSprite = Sprites.draw(ctx, key, cx, baseY, z);
+    if (!usedSprite) {
+      if      (key === 'solar')   this.drawSolar(cx, baseY, z, sun);
+      else if (key === 'oxygen')  this.drawOxygen(cx, baseY, z);
+      else if (key === 'lab')     this.drawLab(cx, baseY, z);
+      else if (key === 'home')    this.drawHome(cx, baseY, z, sun);
+      else if (key === 'battery') this.drawBattery(cx, baseY, z);
+    }
+
     // corruption choke marker
     if (State.data.grid[row][col] && World.isChoked(col, row)) {
       ctx.globalAlpha = alpha * (0.5 + 0.3 * Math.sin(this.anim * 4));

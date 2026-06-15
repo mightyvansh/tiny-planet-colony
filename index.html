@@ -19,6 +19,7 @@
       <div id="objective" class="objective">
         <span class="obj green" title="Planet reclaimed (goal 55%)">🌱 <b id="obj-green">0%</b></span>
         <span class="obj threat" title="Corruption spread">☣️ <b id="obj-threat">0%</b></span>
+        <span class="obj morale" title="Colony morale — affects all production">😊 <b id="obj-morale">50%</b></span>
       </div>
       <div class="resources">
         <div class="res" id="res-energy" title="Energy">
@@ -27,6 +28,10 @@
         </div>
         <div class="res" id="res-oxygen" title="Oxygen">
           <span class="res-icon">🫧</span>
+          <span class="res-info"><b class="res-val">0</b><i class="res-rate">+0/s</i></span>
+        </div>
+        <div class="res" id="res-food" title="Food">
+          <span class="res-icon">🌾</span>
           <span class="res-info"><b class="res-val">0</b><i class="res-rate">+0/s</i></span>
         </div>
         <div class="res" id="res-science" title="Science">
@@ -41,7 +46,9 @@
       <div class="hud-controls">
         <button id="btn-speed" class="ctrl" title="Pause / Play (Space)">⏸</button>
         <button id="btn-ff" class="ctrl" title="Game speed">1×</button>
-        <button id="btn-tech" class="ctrl" title="Research">🧪<span id="tech-badge" class="badge">0/8</span></button>
+        <button id="btn-tech" class="ctrl" title="Research">🧪<span id="tech-badge" class="badge">0/10</span></button>
+        <button id="btn-leaderboard" class="ctrl" title="Global Leaderboard">🏆</button>
+        <button id="btn-auth" class="ctrl" title="Login / Sign Up">🔑 Login</button>
         <button id="btn-save" class="ctrl" title="Save">💾</button>
         <button id="btn-reset" class="ctrl" title="New Colony">🔄</button>
       </div>
@@ -83,15 +90,61 @@
       <div class="overlay-card">
         <h1 id="overlay-title">Game Over</h1>
         <p id="overlay-msg"></p>
+        <div id="overlay-leaderboard" class="hidden">
+          <h3 class="lb-title">🏆 Fastest Colonists</h3>
+          <p id="overlay-lb-note" class="lb-note"></p>
+          <div id="overlay-lb-list" class="lb-list"></div>
+        </div>
         <button id="overlay-btn" class="big-btn">Start New Colony</button>
       </div>
     </div>
 
-  </div>
+    <!-- ======================= AUTH MODAL ======================= -->
+    <div id="auth-modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <button id="auth-close" class="modal-close" aria-label="Close">✕</button>
+        <h2 class="modal-title">🌍 Colony Account</h2>
+        <p class="modal-sub">Login to record your completion time on the global leaderboard.</p>
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">Login</button>
+          <button class="auth-tab" data-tab="signup">Sign Up</button>
+        </div>
+        <p id="auth-error" class="auth-error" role="alert"></p>
 
-  <!-- Scripts loaded in dependency order (plain globals, no modules,
-       so the game also runs by simply opening index.html) -->
+        <form id="form-login" class="auth-form" data-form="login">
+          <input id="login-username" type="text" placeholder="Username" autocomplete="username" required />
+          <input id="login-password" type="password" placeholder="Password" autocomplete="current-password" required />
+          <button type="submit" class="big-btn">Login</button>
+        </form>
+
+        <form id="form-signup" class="auth-form hidden" data-form="signup">
+          <input id="signup-username" type="text" placeholder="Username (3–20 chars, letters/numbers/_)" autocomplete="username" required />
+          <input id="signup-email" type="email" placeholder="Email (optional)" autocomplete="email" />
+          <input id="signup-password" type="password" placeholder="Password (min 6 characters)" autocomplete="new-password" required />
+          <button type="submit" class="big-btn">Create Account</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ======================= LEADERBOARD MODAL ======================= -->
+    <div id="leaderboard-modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <button id="leaderboard-close" class="modal-close" aria-label="Close">✕</button>
+        <h2 class="modal-title">🏆 Global Leaderboard</h2>
+        <p class="modal-sub">Fastest planet reclamations — ranked by in-game time.</p>
+        <div id="leaderboard-list" class="lb-list"></div>
+        <p class="lb-cta" id="lb-cta">
+          <button class="auth-link" onclick="Auth.openAuth('login')">Login</button> or
+          <button class="auth-link" onclick="Auth.openAuth('signup')">sign up</button> to appear here!
+        </p>
+      </div>
+    </div>
+
+  </div><!-- #game -->
+
+  <!-- Scripts loaded in dependency order -->
   <script src="js/config.js"></script>
+  <script src="js/sprites.js"></script>
   <script src="js/iso.js"></script>
   <script src="js/state.js"></script>
   <script src="js/economy.js"></script>
@@ -100,6 +153,7 @@
   <script src="js/world.js"></script>
   <script src="js/render.js"></script>
   <script src="js/input.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/game.js"></script>
 </body>

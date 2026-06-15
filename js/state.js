@@ -22,19 +22,21 @@ const State = {
       energy:  CONFIG.START.energy,
       oxygen:  CONFIG.START.oxygen,
       science: CONFIG.START.science,
+      food:    40,
       population: CONFIG.START.population,
 
       techs: {},          // techKey -> true when researched
-      time: 0,            // seconds survived
+      time: 0,            // simulated seconds survived
       daytime: 0.25,      // 0..1 clock; 0=midnight, 0.5=noon (start at dawn)
       paused: false,
       nextEvent: rand(CONFIG.EVENT_MIN, CONFIG.EVENT_MAX),
       storm: null,        // { timeLeft, factor } while a dust storm rages
       status: 'playing',  // 'playing' | 'won' | 'lost'
       nests: [],          // corruption sources {col,row}
+      morale: 50,         // 0–100, computed by Economy.morale()
 
       // transient rates, refreshed every tick (handy for the HUD)
-      rates: { energy: 0, oxygen: 0, science: 0 },
+      rates: { energy: 0, oxygen: 0, food: 0, science: 0 },
     };
 
     // A small starter base near the middle, on a tiny patch of seeded ground.
@@ -57,12 +59,12 @@ const State = {
 
   /* Count buildings of each type by scanning the grid. */
   counts() {
-    const c = { solar: 0, oxygen: 0, lab: 0, home: 0, battery: 0 };
+    const c = { solar: 0, oxygen: 0, lab: 0, home: 0, battery: 0, farm: 0, medBay: 0, factory: 0 };
     const grid = this.data.grid;
     for (let r = 0; r < grid.length; r++)
       for (let col = 0; col < grid[r].length; col++) {
         const k = grid[r][col];
-        if (k) c[k]++;
+        if (k && k in c) c[k]++;
       }
     return c;
   },
@@ -116,9 +118,12 @@ const State = {
       const d = JSON.parse(raw);
       if (!d || !d.grid) return false;
       // ensure forward-compatible fields exist
-      d.rates = d.rates || { energy: 0, oxygen: 0, science: 0 };
+      d.rates = d.rates || { energy: 0, oxygen: 0, food: 0, science: 0 };
       d.techs = d.techs || {};
       if (typeof d.daytime !== 'number') d.daytime = 0.25;
+      if (typeof d.food   !== 'number') d.food   = 40;
+      if (typeof d.morale !== 'number') d.morale = 50;
+      d.rates.food = d.rates.food || 0;
       // forward-compat: old saves had no terrain layers
       const g = d.grid.length;
       if (!d.terra)  d.terra  = Array.from({ length: g }, () => Array(g).fill(0));

@@ -12,6 +12,8 @@ const UI = {
     this.el.energyRate = q('#res-energy .res-rate');
     this.el.oxygenVal = q('#res-oxygen .res-val');
     this.el.oxygenRate = q('#res-oxygen .res-rate');
+    this.el.foodVal = q('#res-food .res-val');
+    this.el.foodRate = q('#res-food .res-rate');
     this.el.scienceVal = q('#res-science .res-val');
     this.el.scienceRate = q('#res-science .res-rate');
     this.el.popVal = q('#res-pop .res-val');
@@ -27,6 +29,7 @@ const UI = {
 
     this.buildDock();
     this.bindControls();
+    Auth.init();
   },
 
   /* ---------------- build dock ---------------- */
@@ -234,6 +237,17 @@ const UI = {
     } else if (k === 'battery') {
       rows.push(stat('⚡ Storage', `+${BUILDINGS.battery.storage}`, 'up'));
       rows.push(stat('🌙 Use', 'Banks power for night', ''));
+    } else if (k === 'farm') {
+      rows.push(stat('🌾 Food',   `+${(BUILDINGS.farm.base.food * m.food).toFixed(1)}/s`, 'up'));
+      rows.push(stat('⚡ Energy', `-${BUILDINGS.farm.base.energyUse}/s`, 'down'));
+      rows.push(stat('🫧 Oxygen', `-${BUILDINGS.farm.base.oxygenUse}/s`, 'down'));
+    } else if (k === 'medBay') {
+      rows.push(stat('😊 Morale', `+${BUILDINGS.medBay.moralePer}`, 'up'));
+      rows.push(stat('☠️ Death rate', '−50%', 'up'));
+      rows.push(stat('⚡ Energy', `-${BUILDINGS.medBay.base.energyUse}/s`, 'down'));
+    } else if (k === 'factory') {
+      rows.push(stat('😊 Morale', `+${BUILDINGS.factory.moralePer}`, 'up'));
+      rows.push(stat('⚡ Energy', `-${BUILDINGS.factory.base.energyUse}/s`, 'down'));
     }
     q('#info-stats').innerHTML = rows.join('');
   },
@@ -249,14 +263,24 @@ const UI = {
     const cap = Economy.capacities();
     set(this.el.energyVal, fmtNum(d.energy));
     set(this.el.oxygenVal, fmtNum(d.oxygen));
+    set(this.el.foodVal,   fmtNum(d.food));
     set(this.el.scienceVal, fmtNum(d.science));
     set(this.el.popVal, `${Math.floor(d.population)}`);
 
     this.rate(this.el.energyRate, d.rates.energy, `${Math.floor(d.energy)}/${cap.energy}`);
     this.rate(this.el.oxygenRate, d.rates.oxygen, `${Math.floor(d.oxygen)}/${cap.oxygen}`);
+    this.rate(this.el.foodRate,   d.rates.food,   `${Math.floor(d.food)}/${cap.food}`);
     set(this.el.scienceRate, `+${d.rates.science.toFixed(1)}/s`);
     this.el.scienceRate.className = 'res-rate up';
     set(this.el.popRate, `/ ${State.capacity()}`);
+
+    // morale badge
+    const moraleEl = q('#obj-morale');
+    if (moraleEl) {
+      const m = Math.round(d.morale || 0);
+      set(moraleEl, `${m}%`);
+      moraleEl.parentElement.classList.toggle('danger', m < 30);
+    }
 
     // objective: planet reclaimed vs corruption
     const green = State.greenFraction();
@@ -268,7 +292,7 @@ const UI = {
     if (threatEl) threatEl.classList.toggle('danger', threat >= 0.5);
 
     // research progress badge
-    const done = Object.keys(TECHS).filter(k => d.techs[k]).length;
+    const done  = Object.keys(TECHS).filter(k => d.techs[k]).length;
     const total = Object.keys(TECHS).length;
     const badge = q('#tech-badge');
     if (badge) {
@@ -300,17 +324,19 @@ const UI = {
   checkWarnings() {
     const d = State.data;
     if (d.status !== 'playing') return;
-    const lowOxy = d.oxygen < 15 && d.rates.oxygen < 0;
-    const lowEng = d.energy < 15 && d.rates.energy < 0;
+    const lowOxy  = d.oxygen < 15 && d.rates.oxygen < 0;
+    const lowEng  = d.energy < 15 && d.rates.energy < 0;
+    const lowFood = d.food   < 10 && d.rates.food   < 0;
 
     q('#res-oxygen').classList.toggle('danger', lowOxy);
     q('#res-energy').classList.toggle('danger', lowEng);
+    q('#res-food').classList.toggle('danger', lowFood);
 
-    // throttle the spoken warning to once every ~8s
-    if ((lowOxy || lowEng) && (d.time - (this._lastWarn || -99)) > 8) {
+    if ((lowOxy || lowEng || lowFood) && (d.time - (this._lastWarn || -99)) > 8) {
       this._lastWarn = d.time;
-      if (lowOxy) this.toast('bad', '⚠️', 'Oxygen Critical!', 'Build an Oxygen Plant — colonists will start dying!');
-      else        this.toast('bad', '⚠️', 'Power Critical!', 'Build a Solar Panel — plants are shutting down!');
+      if (lowOxy)       this.toast('bad', '⚠️', 'Oxygen Critical!', 'Build an Oxygen Plant — colonists will start dying!');
+      else if (lowEng)  this.toast('bad', '⚠️', 'Power Critical!', 'Build a Solar Panel — plants are shutting down!');
+      else if (lowFood) this.toast('bad', '⚠️', 'Food Critical!', 'Build a Hydroponic Farm before morale collapses!');
     }
   },
 
@@ -387,6 +413,21 @@ const UI = {
       ? `You turned ${green}% of a dead world green and held back the blight — in ${fmtTime(d.time)}. The planet is yours.`
       : `${d.lossReason || 'The colony fell.'} You held on for ${fmtTime(d.time)}.`;
     this.el.overlay.classList.remove('hidden');
+
+    if (won) {
+      // submit score to leaderboard (no-op if not logged in)
+      Auth.submitScore(d.time, State.greenFraction(), Math.floor(d.population));
+      // load top scores into the overlay
+      const lbSection = q('#overlay-leaderboard');
+      if (lbSection) {
+        lbSection.classList.remove('hidden');
+        const note = q('#overlay-lb-note');
+        if (note) note.textContent = Auth.user
+          ? `Score submitted as ${Auth.user.username}!`
+          : 'Login to appear on the leaderboard!';
+        Auth.loadIntoOverlay();
+      }
+    }
   },
 
   hideOverlay() { this.el.overlay.classList.add('hidden'); },

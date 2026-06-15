@@ -1,0 +1,11 @@
+{
+  "name": "tiny-planet-colony",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Colony survival simulator with multiplayer leaderboard",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.8.0"
+  }
+}

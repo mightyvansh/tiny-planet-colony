@@ -51,6 +51,15 @@ const CONFIG = {
   SESSION_SECONDS: 1200,   // ~20 minutes
   WIN_GREEN: 0.55,         // terraform 55% of the planet to win
 
+  // --- food resource (Space Colony-style third resource) ---
+  POP_FOOD_USE: 0.20,      // food consumed per colonist per second
+  FOOD_CAP_BASE: 60,
+  FOOD_PER_FARM: 50,       // extra food storage per farm
+
+  // --- morale: average of resource satisfaction, affects production ---
+  MORALE_PROD_MIN: 0.45,   // output multiplier at 0% morale
+  MORALE_PROD_MAX: 1.00,   // output multiplier at 100% morale
+
   // --- terraforming (you start barren; grow life tile by tile) ---
   TERRAFORM_COST: 12,      // energy to seed one tile
   TERRAFORM_GROW: 0.10,    // green level gained / sec on a seeded tile
@@ -118,6 +127,35 @@ const BUILDINGS = {
     storage: 150,                        // +150 max Energy
     body: '#caa12a', roof: '#ffe46b',
   },
+  farm: {
+    key: 'farm',
+    name: 'Hydroponic Farm',
+    icon: '🌾',
+    desc: 'Grows food using energy and oxygen. Keeps colonists fed and boosts morale.',
+    cost: { energy: 55, science: 0 },
+    base: { food: 2.5, energyUse: 1.5, oxygenUse: 0.4 },
+    body: '#2a7a2a', roof: '#5fc05f',
+  },
+  medBay: {
+    key: 'medBay',
+    name: 'Medical Bay',
+    icon: '⚕️',
+    desc: 'Heals colonists, cuts the death rate in half, and boosts morale.',
+    cost: { energy: 70, science: 25 },
+    base: { energyUse: 2 },
+    moralePer: 12,                       // morale bonus per bay
+    body: '#c0392b', roof: '#ff7675',
+  },
+  factory: {
+    key: 'factory',
+    name: 'Factory',
+    icon: '🏭',
+    desc: 'Manufactures goods that improve morale. Enables advanced research.',
+    cost: { energy: 80, science: 30 },
+    base: { energyUse: 3 },
+    moralePer: 8,
+    body: '#555', roof: '#999',
+  },
 };
 
 /* ---------------------------------------------------------------
@@ -156,5 +194,13 @@ const TECHS = {
   nanoRepair: {
     name: 'Nano Repair Swarm', emoji: '🔧', cost: 175,
     desc: 'Buildings often survive meteor strikes.',
+  },
+  advancedBio: {
+    name: 'Advanced Biosciences', emoji: '🧬', cost: 140,
+    desc: 'Farms produce 40% more food; colonists need 20% less.',
+  },
+  industrialAutomation: {
+    name: 'Industrial Automation', emoji: '🤖', cost: 190,
+    desc: 'Factories and Medical Bays use 30% less energy.',
   },
 };
